@@ -1,7 +1,7 @@
-const Tour = require('../models/tourModel');
-const catchAsync = require('../utils/catchAsync');
-const factory = require('./handleFactory');
-const AppError = require('../utils/appError');
+const Tour = require('./../models/tourModel');
+const catchAsync = require('./../utils/catchAsync');
+const factory = require('./handlerFactory');
+const AppError = require('./../utils/appError');
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -11,50 +11,29 @@ exports.aliasTopTours = (req, res, next) => {
 };
 
 exports.getAllTours = factory.getAll(Tour);
-exports.getTour = factory.getOne(Tour, {
-  path: 'reviews'
-});
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 exports.createTour = factory.createOne(Tour);
 exports.updateTour = factory.updateOne(Tour);
 exports.deleteTour = factory.deleteOne(Tour);
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
-  const stats = await Tour.aggregate([{
-      $match: {
-        ratingsAverage: {
-          $gte: 4.5
-        }
-      }
+  const stats = await Tour.aggregate([
+    {
+      $match: { ratingsAverage: { $gte: 4.5 } }
     },
     {
       $group: {
-        _id: {
-          $toUpper: '$difficulty'
-        },
-        numTours: {
-          $sum: 1
-        },
-        numRatings: {
-          $sum: '$ratingsQuantity'
-        },
-        avgRating: {
-          $avg: '$ratingsAverage'
-        },
-        avgPrice: {
-          $avg: '$price'
-        },
-        minPrice: {
-          $min: '$price'
-        },
-        maxPrice: {
-          $max: '$price'
-        }
+        _id: { $toUpper: '$difficulty' },
+        numTours: { $sum: 1 },
+        numRatings: { $sum: '$ratingsQuantity' },
+        avgRating: { $avg: '$ratingsAverage' },
+        avgPrice: { $avg: '$price' },
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' }
       }
     },
     {
-      $sort: {
-        avgPrice: 1
-      }
+      $sort: { avgPrice: 1 }
     }
     // {
     //   $match: { _id: { $ne: 'EASY' } }
@@ -72,7 +51,8 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
 exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   const year = req.params.year * 1; // 2021
 
-  const plan = await Tour.aggregate([{
+  const plan = await Tour.aggregate([
+    {
       $unwind: '$startDates'
     },
     {
@@ -85,21 +65,13 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
     },
     {
       $group: {
-        _id: {
-          $month: '$startDates'
-        },
-        numTourStarts: {
-          $sum: 1
-        },
-        tours: {
-          $push: '$name'
-        }
+        _id: { $month: '$startDates' },
+        numTourStarts: { $sum: 1 },
+        tours: { $push: '$name' }
       }
     },
     {
-      $addFields: {
-        month: '$_id'
-      }
+      $addFields: { month: '$_id' }
     },
     {
       $project: {
@@ -107,9 +79,7 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
       }
     },
     {
-      $sort: {
-        numTourStarts: -1
-      }
+      $sort: { numTourStarts: -1 }
     },
     {
       $limit: 12
@@ -127,11 +97,7 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
 // /tours-within/:distance/center/:latlng/unit/:unit
 // /tours-within/233/center/34.111745,-118.113491/unit/mi
 exports.getToursWithin = catchAsync(async (req, res, next) => {
-  const {
-    distance,
-    latlng,
-    unit
-  } = req.params;
+  const { distance, latlng, unit } = req.params;
   const [lat, lng] = latlng.split(',');
 
   const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
@@ -146,13 +112,7 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
   }
 
   const tours = await Tour.find({
-    startLocation: {
-      $geoWithin: {
-        $centerSphere: [
-          [lng, lat], radius
-        ]
-      }
-    }
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
   });
 
   res.status(200).json({
@@ -165,10 +125,7 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
 });
 
 exports.getDistances = catchAsync(async (req, res, next) => {
-  const {
-    latlng,
-    unit
-  } = req.params;
+  const { latlng, unit } = req.params;
   const [lat, lng] = latlng.split(',');
 
   const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
@@ -182,7 +139,8 @@ exports.getDistances = catchAsync(async (req, res, next) => {
     );
   }
 
-  const distances = await Tour.aggregate([{
+  const distances = await Tour.aggregate([
+    {
       $geoNear: {
         near: {
           type: 'Point',
